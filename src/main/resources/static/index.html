@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClickFlat</title>
+    <style>
+        /* Global Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* Body styles */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7fc;
+            color: #333;
+            line-height: 1.6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            padding: 0 20px;
+        }
+
+        /* Main container for the page */
+        .container {
+            width: 100%;
+            max-width: 900px;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        /* Header */
+        .header {
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            color: #4e73df;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            color: #6c757d;
+            margin-bottom: 20px;
+        }
+
+        /* File Upload section */
+        .upload-section {
+            margin-bottom: 30px;
+        }
+
+        .upload-section label {
+            background-color: #28a745;
+            color: white;
+            font-size: 1.2em;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease-in-out;
+        }
+
+        .upload-section label:hover {
+            background-color: #218838;
+        }
+
+        .upload-section input[type="file"] {
+            display: none; /* Hides the file input but still functional when the label is clicked */
+        }
+
+        /* Buttons */
+        button {
+            background-color: #4e73df;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1.1em;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease-in-out;
+            margin-bottom: 30px;
+        }
+
+        button:hover {
+            background-color: #2e59a8;
+        }
+
+        /* Table Section */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 30px;
+            margin-bottom: 30px;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-radius: 8px;
+        }
+
+        th {
+            background-color: #4e73df;
+            color: white;
+            font-size: 1.1em;
+        }
+
+        td {
+            background-color: #f9f9f9;
+            color: #555;
+            font-size: 1.1em;
+        }
+
+        tr:nth-child(even) td {
+            background-color: #f1f1f1;
+        }
+
+        tr:hover td {
+            background-color: #e2e6ea;
+        }
+
+        /* Message Box */
+        #errorMessage {
+            color: red;
+            font-size: 1.2em;
+            padding: 20px;
+            background-color: #f8d7da;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        #successMessage {
+            color: green;
+            font-size: 1.2em;
+            padding: 20px;
+            background-color: #d4edda;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        /* Responsive Styles */
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 2em;
+            }
+
+            button, .upload-section label {
+                font-size: 1.1em;
+            }
+
+            table {
+                font-size: 0.9em;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>ClickFlat</h1>
+        <p>Upload CSV and Fetch Users from MySQL</p>
+    </div>
+
+    <div class="upload-section">
+        <label for="csvFile">Upload CSV File</label>
+        <input type="file" id="csvFile" name="csvFile" accept=".csv" onchange="uploadFile()" />
+    </div>
+
+    <div>
+        <button onclick="fetchUsers()">Fetch Users from MySQL</button>
+    </div>
+
+    <div id="userTable"></div>
+    <div id="errorMessage"></div>
+    <div id="successMessage"></div>
+</div>
+
+<script>
+    function uploadFile() {
+        const fileInput = document.getElementById('csvFile');
+        const file = fileInput.files[0];
+
+        if (!file) return alert("Please choose a file to upload");
+
+        const formData = new FormData();
+        formData.append('csvFile', file);
+
+        fetch('http://localhost:8081/uploadCsv', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('successMessage').innerText = "File uploaded and data saved.";
+                document.getElementById('errorMessage').innerText = "";
+            } else {
+                document.getElementById('errorMessage').innerText = "Error uploading file.";
+                document.getElementById('successMessage').innerText = "";
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('errorMessage').innerText = "Error uploading file.";
+            document.getElementById('successMessage').innerText = "";
+        });
+    }
+
+    function fetchUsers() {
+        fetch("http://localhost:8081/users")
+            .then(res => res.json())
+            .then(data => {
+                if (!Array.isArray(data)) throw new Error("Invalid data");
+                const table = document.createElement("table");
+                table.border = 1;
+                const header = table.insertRow();
+                ['ID', 'Name', 'Email', 'Phone Number'].forEach(col => header.insertCell().innerText = col);
+
+                data.forEach(user => {
+                    const row = table.insertRow();
+                    row.insertCell().innerText = user.id;
+                    row.insertCell().innerText = user.name;
+                    row.insertCell().innerText = user.email;
+                    row.insertCell().innerText = user.phoneNumber;
+                });
+
+                const container = document.getElementById("userTable");
+                container.innerHTML = "";
+                container.appendChild(table);
+            })
+            .catch(err => {
+                document.getElementById("userTable").innerText = "Error fetching users: " + err;
+            });
+    }
+</script>
+
+</body>
+</html>
